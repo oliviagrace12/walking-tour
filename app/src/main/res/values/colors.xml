@@ -9,4 +9,5 @@
     <color name="white">#FFFFFFFF</color>
     <color name="splash_background">#FFB2DFDB</color>
     <color name="maps_background">#FF2E7D32</color>
+    <color name="tour_path">#FBC02D</color>
 </resources>

@@ -19,10 +19,11 @@ import android.os.Build;
 import android.os.Bundle;
 import android.util.DisplayMetrics;
 import android.util.Log;
-import android.widget.Button;
+import android.view.View;
 import android.widget.CheckBox;
 import android.widget.TextView;
 
+import com.example.walkingtours.databinding.ActivityMapsBinding;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
@@ -32,7 +33,6 @@ import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
-import com.example.walkingtours.databinding.ActivityMapsBinding;
 import com.google.android.gms.maps.model.Polyline;
 import com.google.android.gms.maps.model.PolylineOptions;
 
@@ -58,12 +58,15 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     private GoogleMap mMap;
     private ActivityMapsBinding binding;
-    private List<LatLng> latLngs = new ArrayList<>();
+    private List<LatLng> travelPathLatLngs = new ArrayList<>();
+    private List<LatLng> tourPathLatLngs = new ArrayList<>();
     private LocationListener locationListener;
     private LocationManager locationManager;
-    private Polyline latLngPolyline;
+    private Polyline travelPathPolyline;
+    private Polyline tourPathPolyline;
     private Geocoder geocoder;
     private Marker walkerMarker;
+    private FenceManager fenceManager;
 
     private TextView currentLocationTextView;
     private CheckBox showAddressesCheckbox;
@@ -91,6 +94,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         showGeofencesCheckbox = findViewById(R.id.showGeofencesCheckbox);
         showTravelPathCheckbox = findViewById(R.id.showTravelPathCheckbox);
         showTourPathCheckbox = findViewById(R.id.showTourPathCheckbox);
+
+        fenceManager = new FenceManager(this);
     }
 
     private void getScreenDimensions() {
@@ -120,6 +125,11 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         mMap.getUiSettings().setCompassEnabled(true);
 
         determineLocation();
+        setupZoomListener();
+    }
+
+    private void setupZoomListener() {
+        // todo if time
     }
 
     private void determineLocation() {
@@ -136,13 +146,13 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     public void updateLocation(Location location) {
         LatLng latLng = new LatLng(location.getLatitude(), location.getLongitude());
-        latLngs.add(latLng);
+        travelPathLatLngs.add(latLng);
 
-        if (latLngPolyline != null) {
-            latLngPolyline.remove();
+        if (travelPathPolyline != null) {
+            travelPathPolyline.remove();
         }
 
-        if (latLngs.size() == 1) {
+        if (travelPathLatLngs.size() == 1) {
             createInitialLocation(latLng);
         } else {
             addAdditionalLocation(latLng);
@@ -202,9 +212,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     private void addAdditionalLocation(LatLng latLng) {
         if (showTravelPathCheckbox.isChecked()) {
-            PolylineOptions polylineOptions = new PolylineOptions();
-            polylineOptions.addAll(latLngs);
-            latLngPolyline = mMap.addPolyline(polylineOptions);
+            PolylineOptions polylineOptions = new PolylineOptions().color(getColor(R.color.maps_background));
+            polylineOptions.addAll(travelPathLatLngs);
+            travelPathPolyline = mMap.addPolyline(polylineOptions);
         }
         mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(latLng, ZOOM_DEFAULT));
     }
@@ -309,5 +319,61 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 + " cannot run without the following permissions: " + deniedPermsString);
         builder.setIcon(R.drawable.walker_right);
         builder.create().show();
+    }
+
+    public GoogleMap getMap() {
+        return mMap;
+    }
+
+    public void setTourPath(List<LatLng> newLatLngs) {
+        tourPathLatLngs.clear();
+        tourPathLatLngs.addAll(newLatLngs);
+
+        if (showTourPathCheckbox.isChecked()) {
+            drawTourPathPolyline();
+        }
+    }
+
+    private void drawTourPathPolyline() {
+        if (tourPathPolyline != null) {
+            tourPathPolyline.remove();
+        }
+
+        PolylineOptions polylineOptions = new PolylineOptions().color(getColor(R.color.tour_path));
+        polylineOptions.addAll(tourPathLatLngs);
+        tourPathPolyline = mMap.addPolyline(polylineOptions);
+    }
+
+    public void toggleTourPathPolyLine(View view) {
+        if (tourPathPolyline == null) {
+            return;
+        }
+        if (showTourPathCheckbox.isChecked()) {
+            tourPathPolyline.setVisible(true);
+        } else {
+            tourPathPolyline.setVisible(false);
+        }
+    }
+
+    public void toggleTraveledPathPolyline(View view) {
+        if (travelPathPolyline == null) {
+            return;
+        }
+        if (showTravelPathCheckbox.isChecked()) {
+            travelPathPolyline.setVisible(true);
+        } else {
+            travelPathPolyline.setVisible(false);
+        }
+    }
+
+    public void toggleAddress(View view) {
+        if (showAddressesCheckbox.isChecked()) {
+            if (travelPathLatLngs.isEmpty()) {
+                return;
+            }
+            populateAddressField(travelPathLatLngs.get(travelPathLatLngs.size() - 1));
+        } else {
+            currentLocationTextView.setText("");
+        }
     }
 }
