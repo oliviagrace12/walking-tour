@@ -1,4 +1,5 @@
 <resources>
     <string name="app_name">Walking Tours</string>
     <string name="title_activity_maps">Map</string>
+    <string name="show_geofences">Show Geofences</string>
 </resources>
