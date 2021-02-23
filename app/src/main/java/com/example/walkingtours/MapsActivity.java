@@ -8,23 +8,35 @@ import androidx.fragment.app.FragmentActivity;
 
 import android.Manifest;
 import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.location.Address;
+import android.location.Geocoder;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.Build;
 import android.os.Bundle;
+import android.util.DisplayMetrics;
 import android.util.Log;
+import android.widget.Button;
+import android.widget.CheckBox;
+import android.widget.TextView;
 
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.model.BitmapDescriptor;
+import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.example.walkingtours.databinding.ActivityMapsBinding;
 import com.google.android.gms.maps.model.Polyline;
 import com.google.android.gms.maps.model.PolylineOptions;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -39,6 +51,10 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     private static final int COMBO_LOC_REQ = 111;
     private static final int FINE_LOC_ONLY_REQ = 222;
     private static final int BACKGROUND_LOC_ONLY_REQ = 333;
+    private final static float ZOOM_DEFAULT = 17.0f;
+
+    public int screenHeight;
+    public int screenWidth;
 
     private GoogleMap mMap;
     private ActivityMapsBinding binding;
@@ -46,7 +62,14 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     private LocationListener locationListener;
     private LocationManager locationManager;
     private Polyline latLngPolyline;
-    private final static float ZOOM_DEFAULT = 17.0f;
+    private Geocoder geocoder;
+    private Marker walkerMarker;
+
+    private TextView currentLocationTextView;
+    private CheckBox showAddressesCheckbox;
+    private CheckBox showGeofencesCheckbox;
+    private CheckBox showTravelPathCheckbox;
+    private CheckBox showTourPathCheckbox;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -55,10 +78,26 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         binding = ActivityMapsBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
+        getScreenDimensions();
+        geocoder = new Geocoder(this);
+
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
+
+        currentLocationTextView = findViewById(R.id.currentLocationAddressView);
+        showAddressesCheckbox = findViewById(R.id.showAddressesCheckbox);
+        showGeofencesCheckbox = findViewById(R.id.showGeofencesCheckbox);
+        showTravelPathCheckbox = findViewById(R.id.showTravelPathCheckbox);
+        showTourPathCheckbox = findViewById(R.id.showTourPathCheckbox);
+    }
+
+    private void getScreenDimensions() {
+        DisplayMetrics displayMetrics = new DisplayMetrics();
+        getWindowManager().getDefaultDisplay().getRealMetrics(displayMetrics);
+        screenHeight = displayMetrics.heightPixels;
+        screenWidth = displayMetrics.widthPixels;
     }
 
     /**
@@ -105,10 +144,39 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
         if (latLngs.size() == 1) {
             createInitialLocation(latLng);
-            return;
+        } else {
+            addAdditionalLocation(latLng);
         }
 
-        addAdditionalLocation(latLng);
+        populateAddressField(latLng);
+        updateWalkerMarker(latLng);
+    }
+
+    private void updateWalkerMarker(LatLng latLng) {
+        double radius = getRadius();
+        if (Double.isNaN(radius)) {
+            return;
+        }
+        Bitmap icon = BitmapFactory.decodeResource(getResources(), R.drawable.walker_right);
+        Bitmap resizedIcon = Bitmap.createScaledBitmap(icon, (int) radius, (int) radius, false);
+        BitmapDescriptor iconBitmap = BitmapDescriptorFactory.fromBitmap(resizedIcon);
+
+        MarkerOptions markerOptions = new MarkerOptions();
+        markerOptions.icon(iconBitmap);
+        markerOptions.position(latLng);
+
+        if (walkerMarker != null) {
+            walkerMarker.remove();
+        }
+
+        walkerMarker = mMap.addMarker(markerOptions);
+    }
+
+    private double getRadius() {
+        double zoom = mMap.getCameraPosition().zoom;
+        double factor = ((35.0 / 2.0 * zoom) - (355.0 / 2.0));
+        double multiplier = ((7.0f / 7200.0f) * screenWidth) - (1.0f / 20.0f);
+        return factor * multiplier;
     }
 
     private void createInitialLocation(LatLng latLng) {
@@ -116,10 +184,28 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(latLng, ZOOM_DEFAULT));
     }
 
+    private void populateAddressField(LatLng latLng) {
+        if (showAddressesCheckbox.isChecked()) {
+            List<Address> currentLocationAddresses = new ArrayList<>();
+            try {
+                currentLocationAddresses = geocoder.getFromLocation(latLng.latitude, latLng.longitude, 1);
+            } catch (IOException e) {
+                Log.w(TAG, "Could not get address of current location");
+            }
+            if (!currentLocationAddresses.isEmpty()) {
+                currentLocationTextView.setText(currentLocationAddresses.get(0).getAddressLine(0));
+            }
+        } else {
+            currentLocationTextView.setText("");
+        }
+    }
+
     private void addAdditionalLocation(LatLng latLng) {
-        PolylineOptions polylineOptions = new PolylineOptions();
-        polylineOptions.addAll(latLngs);
-        latLngPolyline = mMap.addPolyline(polylineOptions);
+        if (showTravelPathCheckbox.isChecked()) {
+            PolylineOptions polylineOptions = new PolylineOptions();
+            polylineOptions.addAll(latLngs);
+            latLngPolyline = mMap.addPolyline(polylineOptions);
+        }
         mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(latLng, ZOOM_DEFAULT));
     }
 

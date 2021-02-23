@@ -2,4 +2,8 @@
     <string name="app_name">Walking Tours</string>
     <string name="title_activity_maps">Map</string>
     <string name="show_geofences">Show Geofences</string>
+    <string name="show_addresses">Show Addresses</string>
+    <string name="show_travel_path">Show Travel Path</string>
+    <string name="show_tour_path">Show Tour Path</string>
+    <string name="current_location_address">Current Location Address</string>
 </resources>
