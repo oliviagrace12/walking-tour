@@ -6,9 +6,12 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
+import android.Manifest;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
 import android.util.Log;
 
 import java.util.ArrayList;
@@ -22,40 +25,58 @@ import static android.content.pm.PackageManager.PERMISSION_GRANTED;
 public class SplashActivity extends AppCompatActivity {
 
     private static final String TAG = "SplashActivity";
-    private static final int LOCATION_REQUEST = 111;
+    private static final int COMBO_LOC_REQ = 111;
+    private static final int FINE_LOC_ONLY_REQ = 222;
+    private static final int BACKGROUND_LOC_ONLY_REQ = 333;
+    private static final int SPLASH_TIME_OUT = 1500;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_splash);
 
-        if (hasAllLocationPermissions()) {
-            openMapsActivity();
+        if (checkPermissions()) {
+            new Handler().postDelayed(this::openMapsActivity, SPLASH_TIME_OUT);
         }
     }
 
     private void openMapsActivity() {
         Intent intent = new Intent(SplashActivity.this, MapsActivity.class);
         startActivity(intent);
-//            overridePendingTransition(R.anim.slide_in, R.anim.slide_out);
+        overridePendingTransition(R.anim.slide_in, R.anim.slide_out);
         finish();
     }
 
-    private boolean hasAllLocationPermissions() {
-        List<String> permissions = new ArrayList<>();
-        if (!hasFineLocationAccess()) {
-            permissions.add(ACCESS_FINE_LOCATION);
-        }
-        if (!hasBackgroundLocationAccess()) {
-            permissions.add(ACCESS_BACKGROUND_LOCATION);
-        }
-
-        if (permissions.isEmpty()) {
-            return true;
+    private boolean checkPermissions() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            if (!hasFineLocationAccess()) {
+                ActivityCompat.requestPermissions(this,
+                        new String[]{ACCESS_FINE_LOCATION}, FINE_LOC_ONLY_REQ);
+                return false;
+            } else if (!hasBackgroundLocationAccess()) {
+                ActivityCompat.requestPermissions(this,
+                        new String[]{ACCESS_BACKGROUND_LOCATION}, BACKGROUND_LOC_ONLY_REQ);
+                return false;
+            } else {
+                return true;
+            }
         } else {
-            ActivityCompat.requestPermissions(
-                    this, permissions.toArray(new String[0]), LOCATION_REQUEST);
-            return false;
+            List<String> permissions = new ArrayList<>();
+            if (!hasFineLocationAccess()) {
+                permissions.add(ACCESS_FINE_LOCATION);
+            }
+            if (Build.VERSION.SDK_INT == Build.VERSION_CODES.Q
+                    && !hasBackgroundLocationAccess()) {
+                permissions.add(ACCESS_BACKGROUND_LOCATION);
+            }
+
+            if (permissions.isEmpty()) {
+                return true;
+            } else {
+                ActivityCompat.requestPermissions(
+                        this, permissions.toArray(new String[0]), COMBO_LOC_REQ);
+                return false;
+            }
         }
     }
 
@@ -66,12 +87,8 @@ public class SplashActivity extends AppCompatActivity {
     }
 
     private boolean hasBackgroundLocationAccess() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            return PERMISSION_GRANTED ==
-                    ContextCompat.checkSelfPermission(this, ACCESS_BACKGROUND_LOCATION);
-        } else {
-            return true;
-        }
+        return PERMISSION_GRANTED ==
+                ContextCompat.checkSelfPermission(this, ACCESS_BACKGROUND_LOCATION);
     }
 
     @Override
@@ -79,7 +96,7 @@ public class SplashActivity extends AppCompatActivity {
                                            @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
 
-        if (LOCATION_REQUEST == requestCode) {
+        if (COMBO_LOC_REQ == requestCode) {
             List<String> deniedPermissions = new ArrayList<>();
             int numGranted = 0;
             for (int i = 0; i < permissions.length; i++) {
@@ -97,6 +114,28 @@ public class SplashActivity extends AppCompatActivity {
                 Log.e(TAG, "Permissions not granted: " + deniedPermsString);
                 openPermissionsDeniedDialogue(deniedPermsString);
             }
+        } else if (FINE_LOC_ONLY_REQ == requestCode) {
+            if (permissions[0].equals(Manifest.permission.ACCESS_FINE_LOCATION) &&
+                    grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                checkBackgroundPermissionOnly();
+            } else {
+                openPermissionsDeniedDialogue(permissions[0]);
+            }
+        } else if (BACKGROUND_LOC_ONLY_REQ == requestCode) {
+            if (permissions[0].equals(Manifest.permission.ACCESS_BACKGROUND_LOCATION) &&
+                    grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                openMapsActivity();
+            } else {
+                openPermissionsDeniedDialogue(permissions[0]);
+            }
+        }
+    }
+
+    private void checkBackgroundPermissionOnly() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R && !hasBackgroundLocationAccess()) {
+            ActivityCompat.requestPermissions(this,
+                    new String[]{Manifest.permission.ACCESS_BACKGROUND_LOCATION},
+                    BACKGROUND_LOC_ONLY_REQ);
         }
     }
 
