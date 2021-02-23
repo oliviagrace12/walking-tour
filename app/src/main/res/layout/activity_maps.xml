@@ -26,6 +26,7 @@
         android:layout_marginBottom="8dp"
         android:buttonTint="@color/white"
         android:checked="true"
+        android:onClick="toggleGeofences"
         android:text="@string/show_geofences"
         android:textColor="@color/white"
         android:textSize="16sp"

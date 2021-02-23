@@ -57,9 +57,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     public int screenWidth;
 
     private GoogleMap mMap;
-    private ActivityMapsBinding binding;
-    private List<LatLng> travelPathLatLngs = new ArrayList<>();
-    private List<LatLng> tourPathLatLngs = new ArrayList<>();
+    private final List<LatLng> travelPathLatLngs = new ArrayList<>();
+    private final List<LatLng> tourPathLatLngs = new ArrayList<>();
     private LocationListener locationListener;
     private LocationManager locationManager;
     private Polyline travelPathPolyline;
@@ -67,6 +66,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     private Geocoder geocoder;
     private Marker walkerMarker;
     private FenceManager fenceManager;
+
+    private boolean zooming = false;
+    private float oldZoom;
 
     private TextView currentLocationTextView;
     private CheckBox showAddressesCheckbox;
@@ -78,7 +80,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        binding = ActivityMapsBinding.inflate(getLayoutInflater());
+        ActivityMapsBinding binding = ActivityMapsBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
         getScreenDimensions();
@@ -129,7 +131,20 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     }
 
     private void setupZoomListener() {
-        // todo if time
+        mMap.setOnCameraIdleListener(() -> {
+            if (zooming) {
+                Log.d(TAG, "onCameraIdle: DONE ZOOMING: " + mMap.getCameraPosition().zoom);
+                zooming = false;
+                oldZoom = mMap.getCameraPosition().zoom;
+            }
+        });
+
+        mMap.setOnCameraMoveListener(() -> {
+            if (mMap.getCameraPosition().zoom != oldZoom) {
+                Log.d(TAG, "onCameraMove: ZOOMING: " + mMap.getCameraPosition().zoom);
+                zooming = true;
+            }
+        });
     }
 
     private void determineLocation() {
@@ -192,6 +207,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     private void createInitialLocation(LatLng latLng) {
         mMap.addMarker(new MarkerOptions().alpha(0.5f).position(latLng).title("My Starting Point"));
         mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(latLng, ZOOM_DEFAULT));
+        zooming = true;
     }
 
     private void populateAddressField(LatLng latLng) {
@@ -216,7 +232,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             polylineOptions.addAll(travelPathLatLngs);
             travelPathPolyline = mMap.addPolyline(polylineOptions);
         }
-        mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(latLng, ZOOM_DEFAULT));
+        if (!zooming) {
+            mMap.animateCamera(CameraUpdateFactory.newLatLng(latLng));
+        }
     }
 
     private boolean checkPermission() {
@@ -374,6 +392,14 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             populateAddressField(travelPathLatLngs.get(travelPathLatLngs.size() - 1));
         } else {
             currentLocationTextView.setText("");
+        }
+    }
+
+    public void toggleGeofences(View view) {
+        if (showGeofencesCheckbox.isChecked()) {
+            fenceManager.showFences();
+        } else {
+            fenceManager.hideFences();
         }
     }
 }

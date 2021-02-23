@@ -144,5 +144,17 @@ public class FenceManager {
         buildingsMap.clear();
         buildingsMap.putAll(newBuildings);
     }
+
+    public void showFences() {
+        for (Circle circle : circles) {
+            circle.setVisible(true);
+        }
+    }
+
+    public void hideFences() {
+        for (Circle circle : circles) {
+            circle.setVisible(false);
+        }
+    }
 }
 
