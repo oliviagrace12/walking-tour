@@ -3,6 +3,7 @@ package com.example.walkingtours;
 import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
 import android.content.ContentResolver;
 import android.content.Context;
@@ -16,6 +17,7 @@ import android.util.Log;
 import androidx.annotation.RequiresApi;
 import androidx.core.app.NotificationCompat;
 
+import com.example.walkingtours.domain.Building;
 import com.example.walkingtours.domain.FenceData;
 import com.google.android.gms.location.Geofence;
 import com.google.android.gms.location.GeofencingEvent;
@@ -38,12 +40,12 @@ public class GeofenceBroadcastReceiver extends BroadcastReceiver {
         List<Geofence> triggeringGeofences = geofencingEvent.getTriggeringGeofences();
 
         for (Geofence triggeringGeofence : triggeringGeofences) {
-            FenceData fenceData = FenceManager.getFenceData(triggeringGeofence.getRequestId());
-            sendNotification(context, fenceData);
+            Building building = FenceManager.getBuilding(triggeringGeofence.getRequestId());
+            sendNotification(context, building);
         }
     }
 
-    private void sendNotification(Context context, FenceData fenceData) {
+    private void sendNotification(Context context, Building building) {
         NotificationManager notificationManager =
                 (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
         if (notificationManager == null) {
@@ -55,14 +57,21 @@ public class GeofenceBroadcastReceiver extends BroadcastReceiver {
             notificationManager.createNotificationChannel(createNotificationChannel(context));
         }
 
-        // todo build pending intent to open building activity
+        Intent intent = new Intent(context.getApplicationContext(), BuildingActivity.class);
+        intent.putExtra(context.getString(R.string.building_name), building.getId());
+        intent.putExtra(context.getString(R.string.building_address), building.getAddress());
+        intent.putExtra(context.getString(R.string.building_image_url), building.getImageUrl());
+        intent.putExtra(context.getString(R.string.building_description), building.getDescription());
+
+        PendingIntent pendingIntent = PendingIntent.getActivity(context.getApplicationContext(),
+                building.hashCode(), intent, PendingIntent.FLAG_UPDATE_CURRENT);
 
         Notification notification = new NotificationCompat.Builder(context, NOTIFICATION_CHANNEL_ID)
-//                .setContentIntent(pendingIntent)
+                .setContentIntent(pendingIntent)
                 .setSmallIcon(R.drawable.fence_notif)
-//                .setContentTitle(fenceData.getId() + " (Tap to See Details)")
-//                .setSubText(fd.getId()) // small text at top left
-//                .setContentText(fd.getAddress()) // Detail info
+                .setContentTitle(building.getId() + " (Tap to See Details)")
+                .setSubText(building.getId()) // small text at top left
+                .setContentText(building.getAddress()) // Detail info
                 .setVibrate(new long[] {1, 1, 1})
                 .setAutoCancel(true)
                 .setLights(0xff0000ff, 300, 1000) // blue color

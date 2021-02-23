@@ -37,7 +37,7 @@ public class FenceManager {
     private PendingIntent geofencePendingIntent;
     private final List<PatternItem> fencePattern = Collections.singletonList(new Dot());
     private final ArrayList<Circle> circles = new ArrayList<>();
-    private final Map<String, Building> buildingsMap = new HashMap<>();
+    private static Map<String, Building> buildingsMap = new HashMap<>();
     private static Map<String, FenceData> fenceDataMap = new HashMap<>();
 
 
@@ -57,6 +57,10 @@ public class FenceManager {
 
     public static FenceData getFenceData(String requestId) {
         return fenceDataMap.get(requestId);
+    }
+
+    public static Building getBuilding(String id) {
+        return buildingsMap.get(id);
     }
 
     private PendingIntent getGeofencePendingIntent() {
@@ -83,8 +87,6 @@ public class FenceManager {
                     .setRequestId(fenceData.getId())
                     .setCircularRegion(fenceData.getLatitude(), fenceData.getLongitude(), fenceData.getRadius())
                     .setTransitionTypes(Geofence.GEOFENCE_TRANSITION_ENTER)
-//                    .setTransitionTypes( | Geofence.GEOFENCE_TRANSITION_DWELL)
-//                    .setLoiteringDelay(3000)
                     .setExpirationDuration(Geofence.NEVER_EXPIRE)
                     .build();
 

@@ -402,4 +402,18 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             fenceManager.hideFences();
         }
     }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        if (locationManager != null && locationListener != null)
+            locationManager.removeUpdates(locationListener);
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (checkPermission() && locationManager != null && locationListener != null)
+            locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 500, 10, locationListener);
+    }
 }
