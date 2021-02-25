@@ -101,7 +101,7 @@ public class FenceManager {
             }
 
             geofencingClient.addGeofences(geofencingRequest, geofencePendingIntent)
-                    .addOnSuccessListener(aVoid -> Log.d(TAG, "onSuccess: addGeofences"))
+                    .addOnSuccessListener(aVoid -> Log.d(TAG, "onSuccess: addGeofences " + fenceData.getLatitude() + ", " + fenceData.getLongitude()))
                     .addOnFailureListener(e -> {
                         e.printStackTrace();
                         Log.d(TAG, "onFailure: addGeofences");

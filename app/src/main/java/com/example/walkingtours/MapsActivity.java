@@ -1,12 +1,15 @@
 package com.example.walkingtours;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.FragmentActivity;
 
 import android.Manifest;
+import android.content.Intent;
+import android.content.IntentSender;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -24,6 +27,12 @@ import android.widget.CheckBox;
 import android.widget.TextView;
 
 import com.example.walkingtours.databinding.ActivityMapsBinding;
+import com.google.android.gms.common.api.ResolvableApiException;
+import com.google.android.gms.location.LocationRequest;
+import com.google.android.gms.location.LocationServices;
+import com.google.android.gms.location.LocationSettingsRequest;
+import com.google.android.gms.location.LocationSettingsResponse;
+import com.google.android.gms.location.SettingsClient;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
@@ -35,6 +44,7 @@ import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.Polyline;
 import com.google.android.gms.maps.model.PolylineOptions;
+import com.google.android.gms.tasks.Task;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -51,6 +61,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     private static final int COMBO_LOC_REQ = 111;
     private static final int FINE_LOC_ONLY_REQ = 222;
     private static final int BACKGROUND_LOC_ONLY_REQ = 333;
+    private static final int ACCURACY_REQUEST = 444;
     private final static float ZOOM_DEFAULT = 17.0f;
 
     public int screenHeight;
@@ -83,6 +94,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         ActivityMapsBinding binding = ActivityMapsBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
+//        checkLocationAccuracy();
+
         getScreenDimensions();
         geocoder = new Geocoder(this);
 
@@ -99,6 +112,47 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
         fenceManager = new FenceManager(this);
     }
+
+    private void checkLocationAccuracy() {
+
+        Log.d(TAG, "checkLocationAccuracy: ");
+        LocationRequest locationRequest = LocationRequest.create();
+        locationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
+
+        LocationSettingsRequest.Builder builder = new LocationSettingsRequest.Builder()
+                .addLocationRequest(locationRequest);
+        SettingsClient client = LocationServices.getSettingsClient(this);
+        Task<LocationSettingsResponse> task = client.checkLocationSettings(builder.build());
+
+        task.addOnSuccessListener(this, locationSettingsResponse -> {
+            Log.d(TAG, "onSuccess: High Accuracy Already Present");
+            initMap();
+        });
+
+        task.addOnFailureListener(this, e -> {
+            if (e instanceof ResolvableApiException) {
+                // Location settings are not satisfied, but this can be fixed
+                // by showing the user a dialog.
+                try {
+                    // Show the dialog by calling startResolutionForResult(),
+                    // and check the result in onActivityResult().
+                    ResolvableApiException resolvable = (ResolvableApiException) e;
+                    resolvable.startResolutionForResult(MapsActivity.this, ACCURACY_REQUEST);
+                } catch (IntentSender.SendIntentException sendEx) {
+                    sendEx.printStackTrace();
+                }
+            }
+        });
+
+    }
+
+    private void initMap() {
+        // Obtain the SupportMapFragment and get notified when the map is ready to be used.
+        SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
+                .findFragmentById(R.id.map);
+        mapFragment.getMapAsync(this);
+    }
+
 
     private void getScreenDimensions() {
         DisplayMetrics displayMetrics = new DisplayMetrics();
@@ -161,6 +215,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     public void updateLocation(Location location) {
         LatLng latLng = new LatLng(location.getLatitude(), location.getLongitude());
+        Log.i(TAG, "updateLocation: [" + latLng.latitude + ", " + latLng.longitude + "]");
         travelPathLatLngs.add(latLng);
 
         if (travelPathPolyline != null) {
@@ -415,5 +470,22 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         super.onResume();
         if (checkPermission() && locationManager != null && locationListener != null)
             locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 500, 10, locationListener);
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+
+        if (requestCode == ACCURACY_REQUEST && resultCode == RESULT_OK) {
+            Log.d(TAG, "onActivityResult: ");
+            initMap();
+        } else {
+            android.app.AlertDialog.Builder builder = new android.app.AlertDialog.Builder(this);
+            builder.setTitle("High-Accuracy Location Services Required");
+            builder.setMessage("High-Accuracy Location Services Required");
+            builder.setPositiveButton("OK", (dialog, id) -> finish());
+            android.app.AlertDialog dialog = builder.create();
+            dialog.show();
+        }
     }
 }

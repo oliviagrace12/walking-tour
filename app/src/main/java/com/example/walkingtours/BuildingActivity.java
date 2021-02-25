@@ -13,6 +13,11 @@ public class BuildingActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_building);
 
+        if (getSupportActionBar() != null) {
+            getSupportActionBar().setDisplayShowHomeEnabled(true);
+            getSupportActionBar().setIcon(R.drawable.home_image);
+        }
+
         TextView nameTextView = findViewById(R.id.buildingName);
         TextView addressTextView = findViewById(R.id.buildingAddress);
         ImageView imageTextView = findViewById(R.id.buildingImage);
