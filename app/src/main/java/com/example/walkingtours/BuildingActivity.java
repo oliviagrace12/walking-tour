@@ -3,13 +3,20 @@ package com.example.walkingtours;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.graphics.Typeface;
+import android.graphics.drawable.BitmapDrawable;
 import android.os.Bundle;
+import android.util.Log;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import com.squareup.picasso.Callback;
+import com.squareup.picasso.Picasso;
+
 public class BuildingActivity extends AppCompatActivity {
 
-    private Typeface customFont;
+    private static final String TAG = "BuildingActivity";
+
+    ImageView imageView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -21,11 +28,11 @@ public class BuildingActivity extends AppCompatActivity {
             getSupportActionBar().setIcon(R.drawable.home_image);
         }
 
-        customFont = Typeface.createFromAsset(getAssets(), "fonts/Acme-Regular.ttf");
+        Typeface customFont = Typeface.createFromAsset(getAssets(), "fonts/Acme-Regular.ttf");
 
         TextView nameTextView = findViewById(R.id.buildingName);
         TextView addressTextView = findViewById(R.id.buildingAddress);
-        ImageView imageTextView = findViewById(R.id.buildingImage);
+        imageView = findViewById(R.id.buildingImage);
         TextView descriptionTextView = findViewById(R.id.buildingDescription);
 
         nameTextView.setTypeface(customFont);
@@ -37,6 +44,25 @@ public class BuildingActivity extends AppCompatActivity {
 
         String buildingImageUrl = getIntent().getStringExtra(getString(R.string.building_image_url));
 
-        // TODO load image with Picasso
+        loadImage(buildingImageUrl);
+    }
+
+    private void loadImage(String buildingImageUrl) {
+        Picasso.get()
+                .load(buildingImageUrl)
+                .error(R.drawable.logo)
+                .placeholder(R.drawable.logo)
+                .into(imageView, new Callback() {
+                    @Override
+                    public void onSuccess() {
+                        Log.d(TAG, "Successfully loaded image: Size: " +
+                                ((BitmapDrawable) imageView.getDrawable()).getBitmap().getByteCount());
+                    }
+
+                    @Override
+                    public void onError(Exception e) {
+                        Log.d(TAG, "Error loading image: " + e.getMessage());
+                    }
+                });
     }
 }

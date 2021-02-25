@@ -187,10 +187,10 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         }
 
         populateAddressField(latLng);
-        updateWalkerMarker(latLng);
+        updateWalkerMarker(latLng, location);
     }
 
-    private void updateWalkerMarker(LatLng latLng) {
+    private void updateWalkerMarker(LatLng latLng, Location location) {
         double radius = getRadius();
         if (Double.isNaN(radius)) {
             return;
@@ -202,6 +202,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         MarkerOptions markerOptions = new MarkerOptions();
         markerOptions.icon(iconBitmap);
         markerOptions.position(latLng);
+        markerOptions.rotation(location.getBearing());
 
         if (walkerMarker != null) {
             walkerMarker.remove();
@@ -221,6 +222,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         mMap.addMarker(new MarkerOptions().alpha(0.5f).position(latLng).title("My Starting Point"));
         mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(latLng, ZOOM_DEFAULT));
         zooming = true;
+
     }
 
     private void populateAddressField(LatLng latLng) {

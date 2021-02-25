@@ -18,7 +18,6 @@ import androidx.annotation.RequiresApi;
 import androidx.core.app.NotificationCompat;
 
 import com.example.walkingtours.domain.Building;
-import com.example.walkingtours.domain.FenceData;
 import com.google.android.gms.location.Geofence;
 import com.google.android.gms.location.GeofencingEvent;
 
