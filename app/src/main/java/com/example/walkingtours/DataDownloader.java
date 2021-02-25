@@ -62,7 +62,7 @@ public class DataDownloader implements Runnable {
             Building building = new Building();
             building.setId(jsonFenceObject.getString("id"));
             building.setAddress(jsonFenceObject.getString("address"));
-            building.setImageUrl(jsonFenceObject.getString("description"));
+            building.setDescription(jsonFenceObject.getString("description"));
             building.setImageUrl(jsonFenceObject.getString("image"));
 
             buildingMap.put(building.getId(), building);

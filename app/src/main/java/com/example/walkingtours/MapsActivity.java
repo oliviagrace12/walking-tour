@@ -222,7 +222,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         mMap.addMarker(new MarkerOptions().alpha(0.5f).position(latLng).title("My Starting Point"));
         mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(latLng, ZOOM_DEFAULT));
         zooming = true;
-
     }
 
     private void populateAddressField(LatLng latLng) {

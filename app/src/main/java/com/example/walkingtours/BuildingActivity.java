@@ -5,6 +5,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import android.graphics.Typeface;
 import android.graphics.drawable.BitmapDrawable;
 import android.os.Bundle;
+import android.text.method.ScrollingMovementMethod;
 import android.util.Log;
 import android.widget.ImageView;
 import android.widget.TextView;
@@ -26,6 +27,7 @@ public class BuildingActivity extends AppCompatActivity {
         if (getSupportActionBar() != null) {
             getSupportActionBar().setDisplayShowHomeEnabled(true);
             getSupportActionBar().setIcon(R.drawable.home_image);
+            getSupportActionBar().setTitle("");
         }
 
         Typeface customFont = Typeface.createFromAsset(getAssets(), "fonts/Acme-Regular.ttf");
@@ -41,6 +43,7 @@ public class BuildingActivity extends AppCompatActivity {
         addressTextView.setText(getIntent().getStringExtra(getString(R.string.building_address)));
         descriptionTextView.setTypeface(customFont);
         descriptionTextView.setText(getIntent().getStringExtra(getString(R.string.building_description)));
+        descriptionTextView.setMovementMethod(new ScrollingMovementMethod());
 
         String buildingImageUrl = getIntent().getStringExtra(getString(R.string.building_image_url));
 
