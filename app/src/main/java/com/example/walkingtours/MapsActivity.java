@@ -1,7 +1,6 @@
 package com.example.walkingtours;
 
 import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
@@ -10,8 +9,6 @@ import androidx.fragment.app.FragmentActivity;
 import android.Manifest;
 import android.app.NotificationManager;
 import android.content.Context;
-import android.content.Intent;
-import android.content.IntentSender;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -29,12 +26,6 @@ import android.widget.CheckBox;
 import android.widget.TextView;
 
 import com.example.walkingtours.databinding.ActivityMapsBinding;
-import com.google.android.gms.common.api.ResolvableApiException;
-import com.google.android.gms.location.LocationRequest;
-import com.google.android.gms.location.LocationServices;
-import com.google.android.gms.location.LocationSettingsRequest;
-import com.google.android.gms.location.LocationSettingsResponse;
-import com.google.android.gms.location.SettingsClient;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
@@ -46,7 +37,6 @@ import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.Polyline;
 import com.google.android.gms.maps.model.PolylineOptions;
-import com.google.android.gms.tasks.Task;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -381,22 +371,14 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         if (tourPathPolyline == null) {
             return;
         }
-        if (showTourPathCheckbox.isChecked()) {
-            tourPathPolyline.setVisible(true);
-        } else {
-            tourPathPolyline.setVisible(false);
-        }
+        tourPathPolyline.setVisible(showTourPathCheckbox.isChecked());
     }
 
     public void toggleTraveledPathPolyline(View view) {
         if (travelPathPolyline == null) {
             return;
         }
-        if (showTravelPathCheckbox.isChecked()) {
-            travelPathPolyline.setVisible(true);
-        } else {
-            travelPathPolyline.setVisible(false);
-        }
+        travelPathPolyline.setVisible(showTravelPathCheckbox.isChecked());
     }
 
     public void toggleAddress(View view) {
