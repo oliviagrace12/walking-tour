@@ -8,6 +8,8 @@ import androidx.core.content.ContextCompat;
 import androidx.fragment.app.FragmentActivity;
 
 import android.Manifest;
+import android.app.NotificationManager;
+import android.content.Context;
 import android.content.Intent;
 import android.content.IntentSender;
 import android.content.pm.PackageManager;
@@ -109,7 +111,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
         fenceManager = new FenceManager(this);
     }
-
 
 
     private void getScreenDimensions() {
@@ -420,15 +421,27 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     @Override
     protected void onPause() {
         super.onPause();
-        if (locationManager != null && locationListener != null)
+        if (locationManager != null && locationListener != null) {
             locationManager.removeUpdates(locationListener);
+        }
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        if (checkPermission() && locationManager != null && locationListener != null)
-            locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 500, 10, locationListener);
+        if (checkPermission() && locationManager != null && locationListener != null) {
+            locationManager.requestLocationUpdates(
+                    LocationManager.GPS_PROVIDER, 1000, 1, locationListener);
+        }
     }
 
+    @Override
+    protected void onDestroy() {
+        NotificationManager notificationManager =
+                (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+        if (notificationManager != null) {
+            notificationManager.cancelAll();
+        }
+        super.onDestroy();
+    }
 }
